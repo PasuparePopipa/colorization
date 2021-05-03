@@ -3,6 +3,7 @@ import random
 from cv2 import cv2
 import numpy as np
 from copy import copy,deepcopy
+from collections import Counter
 
 
 #Grey Conversion: Gray(r, g, b) = 0.21r + 0.72g + 0.07b,
@@ -36,9 +37,90 @@ def basicAgent(image,greyImage):
             image[x,y] = newColor
     print('recoloring Finished')
 
-    #For each 3x3 pixel patch in test data, recolor image
-
+    #For each 3x3 pixel patch in training data data, recolor image in test data
+    applyPatch(image,greyImage,color1,color2,color3,color4,color5)
     print('Finished Running')
+
+#Apply the patch to the Test Data based on training Data
+def applyPatch(image,greyImage,color1,color2,color3,color4,color5):
+    print('Applying Patch')
+    (height, width, d) = image.shape
+    traverse = 0
+    #For each Grey Pixel in test Data
+    for x in range(height-1):
+        for y in range(width // 2,width-1):
+            print(traverse)
+            traverse = traverse + 1
+            if x != 0 and x != height and y != width and y!= 0:
+                #get 6 similar Patches in Training Data
+                colorsList = []
+                similarx, similary = getPatchSimi(greyImage,x,y)
+                #Choose Colors based on the most recurring Colors of the 6 similar latches
+                chosenColor1 = smallestColorDistance(image[similarx[0],similary[0]],color1,color2,color3,color4,color5)
+                colorsList.append(chosenColor1)
+                chosenColor2 = smallestColorDistance(image[similarx[1],similary[1]],color1,color2,color3,color4,color5)
+                colorsList.append(chosenColor2)
+                chosenColor3 = smallestColorDistance(image[similarx[2],similary[2]],color1,color2,color3,color4,color5)
+                colorsList.append(chosenColor3)
+                chosenColor4 = smallestColorDistance(image[similarx[3],similary[3]],color1,color2,color3,color4,color5)
+                colorsList.append(chosenColor4)
+                chosenColor5 = smallestColorDistance(image[similarx[4],similary[4]],color1,color2,color3,color4,color5)
+                colorsList.append(chosenColor5)
+                chosenColor6 = smallestColorDistance(image[similarx[5],similary[5]],color1,color2,color3,color4,color5)
+                colorsList.append(chosenColor6)
+                c = Counter(colorsList)
+                newColor = c.most_common(1)[0][0]
+
+                #Apply Color to Colored Right Pixel
+                image[x,y] = newColor
+
+#Get the six most similar patches given a pixel
+def getPatchSimi(greyImage,x,y):
+    print('Getting Similar Patches')
+    similarx = []
+    similary = []
+    smallNumb = []
+    counter = 0
+    #For left half of Image, get 6 Smallest Values
+    for i in range(height - 1):
+        for j in range(width // 2):
+            if i != 0 and i != height and j != 0 and j != width:
+                if counter <= 6:
+                    tmp = patchDistance(greyImage,x,y,i,j)
+                    smallNumb.append(tmp)
+                    counter = counter + 1
+                else:
+                    smallNumb.sort()
+                    tmp = patchDistance(greyImage,x,y,i,j)
+                    if tmp < smallNumb[5]:
+                        smallNumb.pop()
+                        smallNumb.append(tmp)
+    counter = 0
+    
+    #For left half, get xy coord of smallest values of those patches
+    for i in range(height):
+        for j in range(width // 2):
+            if i != 0 and i != height and j != 0 and j != width and counter < 6:
+                if patchDistance(greyImage,x,y,i,j) in smallNumb:
+                    similarx.append(i)
+                    similary.append(j)
+                    counter = counter + 1
+    return similarx,similary
+
+#Get how Different the colors of two patches are
+def patchDistance(image,x,y,i,j):
+    distance = 0
+    distance = distance + colorDistance(image[x,y],image[i,j])
+    distance = distance + colorDistance(image[x+1,y],image[i+1,j])
+    distance = distance + colorDistance(image[x+1,y-1],image[i+1,j-1])
+    distance = distance + colorDistance(image[x+1,y+1],image[i+1,j+1])
+    distance = distance + colorDistance(image[x-1,y],image[i-1,j])
+    distance = distance + colorDistance(image[x-1,y+1],image[i-1,j+1])
+    distance = distance + colorDistance(image[x-1,y-1],image[i-1,j-1])
+    distance = distance + colorDistance(image[x,y+1],image[i,j+1])
+    distance = distance + colorDistance(image[x,y-1],image[i,j-1])
+    return distance
+
 
 #KClustering, Returns 5 Colors with k-means clustering
 def clusterColor(image):
@@ -190,11 +272,15 @@ def colorDistance(color1,color2):
     (b1,g1,r1) = color1
     (b2,g2,r2) = color2
     #print(b1)
-    return (2*((r1 - r2)**2) + 4*((g1-g2)**2) + 3*((b1-b2)**2)) ** 0.5
+    distance = (2*((r1 - r2)**2) + 4*((g1-g2)**2) + 3*((b1-b2)**2)) ** 0.5
+    #distance = (((r1 - r2)**2) + ((g1-g2)**2) + ((b1-b2)**2)) ** 0.5
+    return distance
+    #return (((r1 - r2)**2) + ((g1-g2)**2) + ((b1-b2)**2)) ** 0.5
+    #return (2*((r1 - r2)**2) + 4*((g1-g2)**2) + 3*((b1-b2)**2)) ** 0.5
 
 
 #Load image and greyscale image
-image = cv2.imread("pika.jpeg")
+image = cv2.imread("tmp2.jpeg")
 (height, width, d) = image.shape
 #Load greyscale image
 greyImage = greyScale(image,height,width)
@@ -210,15 +296,19 @@ color4 = (12,12,12)
 color5 = (4,4,4)
 print(smallestColorDistance(currColor,color1,color2,color3,color4,color5))
 '''
-
+color1 = (9,9,9)
+color2 = (10,10,10)
+color3 = (11,11,11)
+color4 = (12,12,12)
+color5 = (4,4,4)
 #Run Agent
 basicAgent(image,greyImage)
+#applyPatch(image,greyImage,color1,color2,color3,color4,color5)
+#getPatchSimi(greyImage,50,50)
 
 
 
-
-
-
+print('hi')
 #Display Images Side By Side
 finalImage = np.vstack((image, greyImage))
 numpy_vertical_concat = np.concatenate((image, greyImage), axis=0)
