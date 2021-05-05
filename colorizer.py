@@ -285,7 +285,6 @@ image = cv2.imread("tmp2.jpeg")
 #Load greyscale image
 greyImage = greyScale(image,height,width)
 
-
 #Test Smallest Distance
 '''
 currColor = (0,0,0)
@@ -305,8 +304,6 @@ color5 = (4,4,4)
 basicAgent(image,greyImage)
 #applyPatch(image,greyImage,color1,color2,color3,color4,color5)
 #getPatchSimi(greyImage,50,50)
-
-
 
 print('hi')
 #Display Images Side By Side
